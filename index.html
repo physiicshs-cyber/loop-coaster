@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#f5f8fd" />
+<title>ループ・ザ・ループ｜高校物理シミュレーション</title>
+<style>
+:root{color-scheme:light;--ink:#142b47;--muted:#65778e;--blue:#2664ad;--border:#dfe7f0;--paper:#ffffff;--bg:#f5f8fd;--accent:#e88532}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(165deg,#f0f6fe 0,#f8fafc 44%,#f4f8fd 100%);color:var(--ink);font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;line-height:1.5}
+button,input,select{font:inherit}
+.wrap{width:min(1260px,calc(100% - 38px));margin:0 auto;padding:26px 0 44px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:19px}
+.eyebrow{font-size:11px;font-weight:800;letter-spacing:.17em;color:#4579ae}.brand h1{font-size:clamp(22px,2.5vw,31px);letter-spacing:.02em;margin:4px 0 0;font-weight:850}
+.pill{font-size:12px;font-weight:750;color:#32679b;background:#e6f1fc;border:1px solid #c8dff8;border-radius:99px;padding:7px 12px}
+.main-grid{display:grid;grid-template-columns:minmax(0,1fr) 326px;gap:16px;align-items:start}
+.panel{background:var(--paper);border:1px solid #e3eaf3;border-radius:18px;box-shadow:0 8px 28px rgba(21,55,93,.055);overflow:hidden}
+.canvas-head{display:flex;align-items:center;justify-content:space-between;padding:15px 19px;border-bottom:1px solid var(--border);gap:8px}.canvas-head strong{font-size:14px}.canvas-head small{color:var(--muted);font-weight:650}
+#scene{display:block;width:100%;height:auto;aspect-ratio:900/550;min-height:290px;touch-action:pan-y;background:#fff}
+.scene-foot{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;padding:12px 19px;border-top:1px solid var(--border)}
+.status{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700}.status-dot{display:block;width:9px;height:9px;border-radius:50%;background:#b0bdcd}.status-dot.running{background:#1d9a78}.status-dot.done{background:#e9923d}
+.muted{color:var(--muted)}.time{font-size:12px;font-variant-numeric:tabular-nums;color:var(--muted)}
+.side{padding:20px;display:flex;flex-direction:column;gap:18px}
+.section-label{font-weight:850;font-size:12px;color:#5e7491;letter-spacing:.04em}.slider-value{font-weight:800;font-size:26px;letter-spacing:-.035em;font-variant-numeric:tabular-nums}.h-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+input[type=range]{width:100%;accent-color:var(--blue);cursor:pointer;height:27px;margin:5px 0 0}.range-labels{display:flex;justify-content:space-between;color:var(--muted);font-size:11px}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:8px}.btn{border:1px solid var(--border);border-radius:11px;padding:11px 9px;cursor:pointer;background:#fff;color:var(--ink);font-weight:760;min-height:44px;transition:.12s}.btn:hover:not(:disabled){background:#f0f6fd;border-color:#bed4e9}.btn:disabled{opacity:.37;cursor:not-allowed}.btn.primary{background:#2664ad;color:white;border-color:#2664ad}.btn.primary:hover:not(:disabled){background:#194f8e}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #94c3ff;outline-offset:2px}
+.split{height:1px;background:var(--border)}
+.option-list{display:grid;gap:10px}.checkline{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:670;cursor:pointer}.checkline input{width:17px;height:17px;margin:0;accent-color:var(--blue);cursor:pointer}
+.speed{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;font-weight:700}.speed select{min-width:113px;border:1px solid var(--border);border-radius:9px;padding:8px;background:white;color:var(--ink)}
+.detail-panel{padding:18px 20px}.detail-panel h2{font-size:14px;margin:0 0 13px}.detail-panel p{margin:0;font-size:13px;color:var(--muted)}
+.hidden{display:none!important}.value-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;padding:6px 0}.value-row strong{font-variant-numeric:tabular-nums;font-size:13px}.value-row+ .value-row{border-top:1px dashed #e5ecf4}
+.energy-bars{display:grid;gap:11px}.energy-item{font-size:11px;font-weight:700;color:#5e6f84}.energy-track{height:11px;background:#ecf1f7;border-radius:30px;margin-top:5px;overflow:hidden}.energy-fill{height:100%;border-radius:30px;transition:width .08s linear}.energy-p{background:#3b8dc9}.energy-k{background:#e69c42}.energy-t{background:#5e6e9a}
+.result{border-left:3px solid #df8d3c;padding:10px 12px;background:#fff9f0;border-radius:0 9px 9px 0;font-size:13px}.result strong{display:block;margin-bottom:3px}.result small{color:#786d62;line-height:1.6}
+.legend{display:flex;align-items:center;gap:13px;flex-wrap:wrap;color:#62758d;font-size:11px}.swatch{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px}.smallnote{font-size:11px;color:#667b91;line-height:1.7}
+.lower-grid{display:grid;grid-template-columns:minmax(0,1fr) 326px;gap:16px;margin-top:16px;align-items:start}.steps{padding:18px 21px}.steps h2{font-size:14px;margin:0 0 8px}.steps p{font-size:13px;color:var(--muted);margin:0;line-height:1.85}.model-note{font-size:11px;color:#60748b;line-height:1.75;margin-top:12px}.footer{margin-top:18px;font-size:11px;color:#7b8da1;text-align:right}
+@media(max-width:940px){.main-grid,.lower-grid{grid-template-columns:1fr}.side{display:grid;grid-template-columns:1fr 1fr;gap:16px 22px}.side .wide{grid-column:1/-1}.canvas-head{padding:12px 14px}#scene{min-height:230px}.lower-grid{gap:12px}}
+@media(max-width:580px){.wrap{width:calc(100% - 20px);padding:15px 0}.side{display:flex;padding:15px}.panel{border-radius:13px}.canvas-head{flex-wrap:wrap}#scene{min-height:220px}.controls{gap:7px}.btn{padding:10px 6px}.brand h1{font-size:23px}}
+</style>
+</head>
+<body>
+<main class="wrap">
+<header>
+ <div class="brand"><div class="eyebrow">PHYSICS INTERACTIVE LAB</div><h1>ループ・ザ・ループ</h1></div>
+ <span class="pill">高校物理 · 円運動 × エネルギー</span>
+</header>
+<div class="main-grid">
+ <section class="panel" aria-label="運動シミュレーション">
+  <div class="canvas-head"><strong>運動の様子</strong><small>摩擦なし・質点モデル</small></div>
+  <canvas id="scene" width="900" height="550" role="img" aria-label="放物線の導入レールから円形ループへ進む車両のアニメーション"></canvas>
+  <div class="scene-foot"><span class="status"><i class="status-dot" id="statusDot"></i><span id="status">実験の準備ができました</span></span><span class="time" id="timeLabel">0.00 s</span></div>
+ </section>
+ <section class="panel side" aria-label="実験の操作">
+  <div class="wide">
+   <div class="section-label">01 / 出発条件</div>
+   <div class="h-row"><label for="height" style="font-size:13px;font-weight:700">出発高さ h</label><output id="heightText" class="slider-value" for="height">3.00 R</output></div>
+   <input id="height" type="range" min="1" max="4" value="3" step="0.05" aria-label="出発高さ h / R" />
+   <div class="range-labels"><span>1.00 R</span><span>4.00 R</span></div>
+   <div class="smallnote">ループ半径 R = 1.00 m ／ 重力加速度 g = 9.8 m/s²</div>
+  </div>
+  <div class="split wide"></div>
+  <div class="wide">
+   <div class="section-label" style="margin-bottom:10px">02 / 再生操作</div>
+   <div class="controls">
+    <button class="btn primary" type="button" id="play">▶ スタート</button>
+    <button class="btn" type="button" id="pause" disabled>一時停止</button>
+    <button class="btn" type="button" id="step">コマ送り</button>
+    <button class="btn" type="button" id="reset">↺ リセット</button>
+   </div>
+  </div>
+  <label class="speed wide" for="speed">再生速度<select id="speed"><option value="0.25">0.25 倍</option><option value="0.5">0.5 倍</option><option value="1" selected>1 倍</option><option value="2">2 倍</option></select></label>
+  <div class="split wide"></div>
+  <div class="wide">
+   <div class="section-label" style="margin-bottom:12px">03 / 観察するもの</div>
+   <div class="option-list">
+    <label class="checkline"><input type="checkbox" id="showDetach" />離脱位置を表示</label>
+    <label class="checkline"><input type="checkbox" id="showEnergy" />エネルギーを表示</label>
+    <label class="checkline"><input type="checkbox" id="showForces" />重力・垂直抗力を表示</label>
+    <label class="checkline"><input type="checkbox" id="showVelocity" />速度ベクトルを表示</label>
+   </div>
+  </div>
+  <div class="split wide"></div>
+  <div class="wide" id="resultWrap" aria-live="polite"><div class="section-label" style="margin-bottom:7px">実験結果</div><p class="smallnote" style="margin:0">実験終了後に表示します。</p></div>
+ </section>
+</div>
+<div class="lower-grid">
+ <section class="panel detail-panel hidden" id="energyPanel"><h2>エネルギー</h2>
+  <div class="energy-bars">
+   <div class="energy-item">位置エネルギー U = mgy <span style="float:right" id="uText">—</span><div class="energy-track"><div class="energy-fill energy-p" id="uBar" style="width:0"></div></div></div>
+   <div class="energy-item">運動エネルギー K = ½mv² <span style="float:right" id="kText">—</span><div class="energy-track"><div class="energy-fill energy-k" id="kBar" style="width:0"></div></div></div>
+   <div class="energy-item">力学的エネルギー E <span style="float:right" id="eText">—</span><div class="energy-track"><div class="energy-fill energy-t" id="eBar" style="width:0"></div></div></div>
+  </div>
+  <div class="smallnote" style="margin-top:12px">質量 m = 1.00 kg、位置エネルギーの基準はループ最下点。</div>
+ </section>
+ <section class="panel detail-panel hidden" id="forcePanel"><h2>運動中の物理量</h2>
+  <div class="value-row"><span>速さ</span><strong id="vText">—</strong></div>
+  <div class="value-row"><span>重力</span><strong>9.80 N</strong></div>
+  <div class="value-row"><span>垂直抗力</span><strong id="nText">—</strong></div>
+  <div class="value-row"><span>運動の状態</span><strong id="modeText">—</strong></div>
+ </section>
+ <section class="panel steps"><h2>実験の進め方</h2><p>出発高さを変えて運動を観察してみましょう。必要に応じて一時停止・コマ送りを使い、実験後に「離脱位置を表示」をオンにすると、レールから離れた場所とその後の軌跡を確認できます。</p></section>
+ <section class="panel steps"><h2>このモデルの約束</h2><p>車両は質点として扱います。レールは車両を引っ張れず、接触が失われると重力だけを受けて飛びます。導入路は円形ループと滑らかにつながる放物線です。</p></section>
+</div>
+<div class="footer">Loop the Loop · 学習用シミュレーション · オフライン動作対応</div>
+</main>
+<script>
+"use strict";
+// ===== 物理モデル：R=1 m, g=9.8 m/s^2, m=1 kg =====
+// x,y は右・上を正、ループ中心 (0,R)、開始位置 (-sqrt(2Rh),h)。
+// 導入レールは y=x^2/(2R)。接線と曲率がループ最下点に一致する。
+const R=1,G=9.8,M=1,DT=1/360,END_X=3.27*R;
+const TWO_PI=2*Math.PI, BOTTOM=-Math.PI/2, FINISH=3*Math.PI/2;
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+function rk4(y,dt,fun){
+  const k1=fun(y),k2=fun(y.map((v,i)=>v+k1[i]*dt/2));
+  const k3=fun(y.map((v,i)=>v+k2[i]*dt/2)),k4=fun(y.map((v,i)=>v+k3[i]*dt));
+  return y.map((v,i)=>v+dt*(k1[i]+2*k2[i]+2*k3[i]+k4[i])/6);
+}
+function findEvent(state,dt,fun,test){
+  let a=0,b=dt;
+  for(let i=0;i<29;i++){const mid=(a+b)/2;if(test(rk4(state,mid,fun)))b=mid;else a=mid;}
+  return b;
+}
+function rampDeriv(z){const x=z[0],dx=z[1],p=x/R;
+  return [dx,-(G*p+p*dx*dx/R)/(1+p*p)];
+}
+function loopDeriv(z){return[z[1],-G/R*Math.cos(z[0])];}
+function rampState(t,x,dx,phase){
+  const p=x/R,y=x*x/(2*R),v=Math.hypot(dx,dx*p),nx=-p/Math.hypot(1,p),ny=1/Math.hypot(1,p);
+  const normal=M*(G/Math.hypot(1,p)+v*v/(R*Math.pow(1+p*p,1.5)));
+  return {t,x,y,vx:dx,vy:p*dx,mode:phase,normal,nx,ny,angle:null};
+}
+function loopState(t,theta,omega){
+  const x=R*Math.cos(theta),y=R*(1+Math.sin(theta)),v=R*omega;
+  return {t,x,y,vx:-v*Math.sin(theta),vy:v*Math.cos(theta),mode:'loop',normal:Math.max(0,M*(v*v/R-G*Math.sin(theta))),nx:-Math.cos(theta),ny:-Math.sin(theta),angle:theta};
+}
+function flightState(t,t0,seed){
+  const tau=t-t0;
+  return {t,x:seed.x+seed.vx*tau,y:seed.y+seed.vy*tau-G*tau*tau/2,
+    vx:seed.vx,vy:seed.vy-G*tau,mode:'flight',normal:0,nx:0,ny:0,angle:null};
+}
+function exitState(t,x,v){return {t,x,y:0,vx:v,vy:0,mode:'exit',normal:M*G,nx:0,ny:1,angle:null};}
+function buildSimulation(h){
+  const frames=[],startX=-Math.sqrt(2*R*h),limit=16;
+  let t=0,mode='rampDown',q=[startX,0],detachment=null,completion=null,collision=null;
+  let takeoffT=0,takeoff=null,exitX=0,exitT=0,exitV=Math.sqrt(2*G*h),endReason='timeout';
+  const detEligible=h>R+1e-8&&h<2.5*R-1e-8;
+  const detAngle=detEligible?Math.asin((2*h/R-2)/3):null;
+  frames.push(rampState(0,...q,mode));
+  const snap=(s)=>{frames.push(s);return s};
+  // 各区間を固定刻みのRK4で積分し、境界を二分法で特定する。
+  for(let it=0;it<Math.ceil(limit/DT);it++){
+    const step=DT;
+    if(mode==='rampDown'||mode==='rampBack'){
+      const next=rk4(q,step,rampDeriv);
+      if(mode==='rampDown'&&next[0]>=0){
+        const sub=findEvent(q,step,rampDeriv,z=>z[0]>=0);
+        t+=sub;q=[BOTTOM,Math.sqrt(2*G*h)/R];
+        snap(loopState(t,...q));mode='loop';continue;
+      }
+      if(mode==='rampBack'&&(next[0]<=startX||(q[1]<0&&next[1]>=0))){
+        const sub=findEvent(q,step,rampDeriv,z=>z[0]<=startX||z[1]>=0);
+        t+=sub;snap(rampState(t,startX,0,'rampBack'));
+        endReason='turnback';break;
+      }
+      t+=step;q=next;snap(rampState(t,...q,mode));
+    }else if(mode==='loop'){
+      const next=rk4(q,step,loopDeriv);
+      if(detEligible&&q[1]>0&&next[0]>=detAngle&&q[0]<detAngle){
+        const sub=findEvent(q,step,loopDeriv,z=>z[0]>=detAngle);
+        t+=sub;
+        const y=R*(1+Math.sin(detAngle)),v=Math.sqrt(Math.max(0,2*G*(h-y)));
+        takeoff={x:R*Math.cos(detAngle),y,vx:-v*Math.sin(detAngle),vy:v*Math.cos(detAngle)};
+        detachment={...takeoff,angleDeg:(detAngle-BOTTOM)*180/Math.PI,speed:v,time:t};
+        snap({...flightState(t,t,takeoff),mode:'flight'});
+        takeoffT=t;mode='flight';continue;
+      }
+      if(next[0]>=FINISH&&q[1]>0){
+        const sub=findEvent(q,step,loopDeriv,z=>z[0]>=FINISH);
+        t+=sub;snap(loopState(t,FINISH,exitV/R));
+        completion=t;exitT=t;exitX=0;mode='exit';continue;
+      }
+      if(next[0]<=BOTTOM&&q[1]<0){
+        const sub=findEvent(q,step,loopDeriv,z=>z[0]<=BOTTOM);
+        t+=sub;q=[0,-Math.sqrt(2*G*h)];snap(rampState(t,...q,'rampBack'));
+        mode='rampBack';continue;
+      }
+      t+=step;q=next;snap(loopState(t,...q));
+    }else if(mode==='flight'){
+      const a=flightState(t,takeoffT,takeoff),b=flightState(t+step,takeoffT,takeoff);
+      const f=(s)=>s.x*s.x+(s.y-R)*(s.y-R)-R*R;
+      const impacts=[];
+      // 飛行後は円の内側に入る。内側から外側への初回交差を検出。
+      if(t-takeoffT>1e-4&&f(a)<-1e-12&&f(b)>=0){
+        let lo=t,hi=t+step;
+        for(let j=0;j<31;j++){let mid=(lo+hi)/2;if(f(flightState(mid,takeoffT,takeoff))>=0)hi=mid;else lo=mid;}
+        impacts.push({time:hi,what:'loop'});
+      }
+      const rampF=s=>s.y-s.x*s.x/(2*R);
+      if(a.x<=0&&a.x>=startX&&rampF(a)>0&&b.x>=startX&&b.x<=0&&rampF(b)<=0){
+        let lo=t,hi=t+step;
+        for(let j=0;j<31;j++){let mid=(lo+hi)/2;if(rampF(flightState(mid,takeoffT,takeoff))<=0)hi=mid;else lo=mid;}
+        impacts.push({time:hi,what:'ramp'});
+      }
+      if(a.y>0&&b.y<=0){
+        let lo=t,hi=t+step;
+        for(let j=0;j<31;j++){let mid=(lo+hi)/2;if(flightState(mid,takeoffT,takeoff).y<=0)hi=mid;else lo=mid;}
+        impacts.push({time:hi,what:'ground'});
+      }
+      if(impacts.length){
+        impacts.sort((u,v)=>u.time-v.time);
+        const hit=impacts[0];t=hit.time;collision=hit.what;
+        snap({...flightState(t,takeoffT,takeoff),mode:'impact'});
+        endReason='detach';break;
+      }
+      t+=step;snap(b);
+    }else if(mode==='exit'){
+      const x=exitX+exitV*(t+step-exitT);
+      if(x>=END_X){
+        t=exitT+(END_X-exitX)/exitV;snap(exitState(t,END_X,exitV));
+        endReason='success';break;
+      }
+      t+=step;snap(exitState(t,x,exitV));
+    }
+  }
+  const final=frames[frames.length-1];
+  return {h,frames,duration:final.t,detachment,completion,collision,endReason,startX};
+}
+window.LoopPhysics={buildSimulation,R,G,DT};
+// ===== 画面 =====
+const $=id=>document.getElementById(id);
+const canvas=$('scene'),ctx=canvas.getContext('2d');
+const dom={height:$('height'),heightText:$('heightText'),play:$('play'),pause:$('pause'),step:$('step'),reset:$('reset'),speed:$('speed'),status:$('status'),statusDot:$('statusDot'),time:$('timeLabel'),result:$('resultWrap'),detach:$('showDetach'),energy:$('showEnergy'),forces:$('showForces'),velocity:$('showVelocity')};
+let sim=buildSimulation(3),simTime=0,playing=false,hasStarted=false,prevStamp=null,lastRendered=null;
+const WORLD={xmin:-3.30,xmax:3.55,ymin:-.38,ymax:4.22};
+const coord={};
+function resize(){
+  const rect=canvas.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2);
+  canvas.width=Math.round(rect.width*dpr);canvas.height=Math.round(rect.height*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  const w=rect.width,h=rect.height,s=Math.min((w-50)/(WORLD.xmax-WORLD.xmin),(h-40)/(WORLD.ymax-WORLD.ymin));
+  Object.assign(coord,{w,h,s,ox:(w-s*(WORLD.xmax-WORLD.xmin))/2-WORLD.xmin*s,oy:(h-s*(WORLD.ymax-WORLD.ymin))/2+WORLD.ymax*s});
+  render();
+}
+const P=(x,y)=>({x:coord.ox+x*coord.s,y:coord.oy-y*coord.s});
+function line(x1,y1,x2,y2,color,width=1,dash=[]){const a=P(x1,y1),b=P(x2,y2);ctx.beginPath();ctx.setLineDash(dash);ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=color;ctx.lineWidth=width;ctx.stroke();ctx.setLineDash([]);}
+function textAt(str,x,y,color='#647b92',size=12,bold=false,align='left'){
+  const p=P(x,y);ctx.font=`${bold?750:550} ${size}px system-ui, sans-serif`;ctx.fillStyle=color;ctx.textAlign=align;ctx.fillText(str,p.x,p.y);
+}
+function drawRailPath(builder){ctx.save();ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();builder();ctx.strokeStyle='#dce9f5';ctx.lineWidth=10;ctx.stroke();ctx.strokeStyle='#477cb8';ctx.lineWidth=4;ctx.stroke();ctx.restore();}
+function drawRails(){
+  // ワークシートで測るための高さ目盛（理論的な限界高さは記さない）
+  for(let i=0;i<=4;i++){
+    line(-3.05,i,3.4,i,i===0?'#cbd9e7':'#eaf0f7',i===0?1.7:1,[i===0?0:3,i===0?0:6]);
+    textAt(`${i} m`,3.45,i+.06,'#8194a8',10,false,'right');
+  }
+  const sx=sim.startX;
+  drawRailPath(()=>{for(let j=0;j<=120;j++){
+    const x=sx*(1-j/120),y=x*x/(2*R),p=P(x,y);
+    if(j===0)ctx.moveTo(p.x,p.y);else ctx.lineTo(p.x,p.y);
+  }});
+  drawRailPath(()=>{for(let j=0;j<=240;j++){
+    const theta=BOTTOM+TWO_PI*j/240,p=P(Math.cos(theta)*R,(1+Math.sin(theta))*R);
+    if(j===0)ctx.moveTo(p.x,p.y);else ctx.lineTo(p.x,p.y);
+  }});
+  drawRailPath(()=>{const a=P(0,0),b=P(END_X,0);ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y)});
+  // ループ半径
+  line(0,1,1,1,'#adc3db',1.4,[4,4]);
+  textAt('R',.52,1.13,'#6b89ac',12,true,'center');
+  const sp=P(sx,sim.h);ctx.beginPath();ctx.arc(sp.x,sp.y,5,0,TWO_PI);ctx.fillStyle='#b4c6d9';ctx.fill();
+  line(sx,0,sx,sim.h,'#9eb4cc',1.3,[3,5]);
+  textAt(`h = ${sim.h.toFixed(2)} m`,sx+.10,sim.h+.22,'#366a9e',12,true);
+  textAt('出発点',sx+.10,sim.h+.42,'#7087a0',11);
+  textAt('最下点',.14,-.19,'#7087a0',11);
+}
+function circle(x,y,r,fill,stroke=null,width=1){let p=P(x,y);ctx.beginPath();ctx.arc(p.x,p.y,r,0,TWO_PI);ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=width;ctx.stroke();}}
+function drawArrow(x,y,vx,vy,color,label,scale=1){
+  const a=P(x,y),xx=vx*scale,yy=-vy*scale,length=Math.hypot(xx,yy);
+  if(length<2.2)return;
+  const tx=a.x+xx,ty=a.y+yy;
+  ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(tx,ty);ctx.strokeStyle=color;ctx.lineWidth=2.8;ctx.lineCap='round';ctx.stroke();
+  const th=Math.atan2(yy,xx),l=9;
+  ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(tx-l*Math.cos(th-.45),ty-l*Math.sin(th-.45));ctx.lineTo(tx-l*Math.cos(th+.45),ty-l*Math.sin(th+.45));ctx.closePath();ctx.fillStyle=color;ctx.fill();
+  ctx.font='700 12px system-ui, sans-serif';ctx.fillStyle=color;ctx.fillText(label,tx+7,ty-8);
+}
+function getState(at){const arr=sim.frames;if(at<=0)return arr[0];if(at>=sim.duration)return arr[arr.length-1];
+  let lo=0,hi=arr.length-1;while(hi-lo>1){let mid=(lo+hi)>>1;if(arr[mid].t<at)lo=mid;else hi=mid;}
+  const a=arr[lo],b=arr[hi],f=clamp((at-a.t)/(b.t-a.t||1),0,1);
+  // 異なる相の境界をまたぐ場合にも区間間の補間のみ。
+  const k=(key)=>a[key]+(b[key]-a[key])*f;
+  return {t:at,x:k('x'),y:k('y'),vx:k('vx'),vy:k('vy'),normal:k('normal'),nx:k('nx'),ny:k('ny'),mode:f<.5?a.mode:b.mode,angle:a.angle!==null&&b.angle!==null?k('angle'):null};
+}
+function drawDetachment(){
+  if(!dom.detach.checked||!sim.detachment||simTime<sim.detachment.time)return;
+  const d=sim.detachment;
+  ctx.beginPath();let p=P(d.x,d.y);ctx.arc(p.x,p.y,6,0,TWO_PI);ctx.fillStyle='#df404c';ctx.fill();ctx.strokeStyle='white';ctx.lineWidth=2;ctx.stroke();
+  let started=false;ctx.beginPath();ctx.setLineDash([5,5]);
+  for(const f of sim.frames){if(f.t<d.time)continue;if(f.t>simTime+1e-9)break;if(f.mode==='flight'||f.mode==='impact'){
+    const q=P(f.x,f.y);if(!started){ctx.moveTo(q.x,q.y);started=true;}else ctx.lineTo(q.x,q.y);
+  }}
+  ctx.strokeStyle='#e56c76';ctx.lineWidth=2;ctx.stroke();ctx.setLineDash([]);
+  const placement=d.x>.65?-.15:.15;
+  textAt('離脱点',d.x+placement,d.y+.18,'#c73e4d',12,true,d.x>.65?'right':'left');
+}
+function drawVehicle(s){
+  const p=P(s.x,s.y);
+  ctx.save();ctx.shadowColor='rgba(143,83,33,.25)';ctx.shadowBlur=10;ctx.shadowOffsetY=3;
+  ctx.beginPath();ctx.arc(p.x,p.y,9,0,TWO_PI);ctx.fillStyle='#f19a42';ctx.fill();ctx.shadowBlur=0;
+  ctx.strokeStyle='#b9672e';ctx.lineWidth=2;ctx.stroke();
+  ctx.beginPath();ctx.arc(p.x-2.5,p.y-3,2.1,0,TWO_PI);ctx.fillStyle='#fff5e6';ctx.fill();ctx.restore();
+}
+function draw(){
+  const {w,h}=coord;if(!w)return;
+  ctx.clearRect(0,0,w,h);
+  // 淡い地面の帯
+  const ground=P(0,0).y;ctx.fillStyle='#f7fafc';ctx.fillRect(0,ground,w,Math.max(0,h-ground));
+  drawRails();drawDetachment();
+  const s=getState(simTime);
+  if(dom.forces.checked){
+    drawArrow(s.x,s.y,0,-G,'#d94351','mg',3.7);
+    if(s.mode!=='flight'&&s.mode!=='impact'&&s.normal>.02){
+      const len=Math.min(112,3.7*s.normal);
+      drawArrow(s.x,s.y,s.nx,s.ny,'#7355c8','N',len);
+    }
+  }
+  if(dom.velocity.checked){const len=Math.min(80,7*Math.hypot(s.vx,s.vy));
+    const v=Math.hypot(s.vx,s.vy);if(v>.01)drawArrow(s.x,s.y,s.vx/v,s.vy/v,'#158a82','v',len);
+  }
+  drawVehicle(s);renderReadouts(s);
+}
+function renderReadouts(s){
+  dom.time.textContent=`${simTime.toFixed(2)} s`;
+  const u=M*G*s.y,k=.5*M*(s.vx*s.vx+s.vy*s.vy),total=M*G*sim.h,per=x=>clamp(x/total*100,0,100)+'%';
+  $('uBar').style.width=per(u);$('kBar').style.width=per(k);$('eBar').style.width=per(u+k);
+  $('uText').textContent=u.toFixed(2)+' J';$('kText').textContent=k.toFixed(2)+' J';$('eText').textContent=(u+k).toFixed(2)+' J';
+  $('vText').textContent=Math.hypot(s.vx,s.vy).toFixed(2)+' m/s';
+  $('nText').textContent=(s.mode==='impact'?'—':s.normal.toFixed(2)+' N');
+  const modes={rampDown:'導入レール',rampBack:'導入レール（戻り）',loop:'ループ上',flight:'空中',impact:'衝突',exit:'出口レール'};
+  $('modeText').textContent=modes[s.mode]||'—';
+}
+function render(){draw();syncUI();}
+function syncUI(){
+  dom.play.disabled=playing||simTime>=sim.duration-1e-8;
+  dom.pause.disabled=!playing;
+  dom.step.disabled=playing||simTime>=sim.duration-1e-8;
+  dom.play.textContent=hasStarted?'▶ 再開':'▶ スタート';
+  dom.pause.textContent='一時停止';
+  dom.energy.checked?$('energyPanel').classList.remove('hidden'):$('energyPanel').classList.add('hidden');
+  dom.forces.checked?$('forcePanel').classList.remove('hidden'):$('forcePanel').classList.add('hidden');
+  const done=hasStarted&&simTime>=sim.duration-1e-8;
+  dom.statusDot.className='status-dot'+(done?' done':playing?' running':'');
+  dom.status.textContent=done?'実験終了':playing?'運動中':hasStarted?'一時停止中':'実験の準備ができました';
+  if(!done){
+    dom.result.innerHTML='<div class="section-label" style="margin-bottom:7px">実験結果</div><p class="smallnote" style="margin:0">実験終了後に表示します。</p>';
+  }else{
+    let message,detail;
+    if(sim.endReason==='success'){
+      message='ループを1回転しました';detail='車両はレールとの接触を保ったまま、出口へ進みました。';
+    }else if(sim.endReason==='detach'){
+      message='途中でレールから離れました';detail='「離脱位置を表示」をオンにすると、離脱地点と放物運動の軌跡を確認できます。';
+    }else if(sim.endReason==='turnback'){
+      message='ループの途中で折り返しました';detail='いったん速度が0になり、反対方向に動いて出発点まで戻りました。';
+    }else{
+      message='計算時間の上限に達しました';detail='条件を変更して再実験してください。';
+    }
+    let extra=sim.detachment&&dom.detach.checked?`<div style="margin-top:8px;font-size:12px">離脱角度：<strong>${sim.detachment.angleDeg.toFixed(1)}°</strong>（最下点から進行方向）<br>離脱速度：<strong>${sim.detachment.speed.toFixed(2)} m/s</strong><br>垂直抗力：<strong>0.00 N</strong></div>`:'';
+    dom.result.innerHTML=`<div class="section-label" style="margin-bottom:9px">実験結果</div><div class="result"><strong>${message}</strong><small>${detail}</small>${extra}</div>`;
+  }
+}
+function clearRun(){playing=false;sim=buildSimulation(Number(dom.height.value));simTime=0;hasStarted=false;prevStamp=null;render();}
+function start(){if(playing||simTime>=sim.duration)return;hasStarted=true;playing=true;prevStamp=null;render();requestAnimationFrame(tick);}
+function tick(stamp){if(!playing)return;if(prevStamp===null)prevStamp=stamp;
+  const elapsed=Math.min((stamp-prevStamp)/1000,.10);prevStamp=stamp;
+  simTime=Math.min(sim.duration,simTime+elapsed*Number(dom.speed.value));
+  if(simTime>=sim.duration){playing=false;prevStamp=null;}render();
+  if(playing)requestAnimationFrame(tick);
+}
+dom.height.addEventListener('input',()=>{dom.heightText.textContent=Number(dom.height.value).toFixed(2)+' R';clearRun();});
+dom.play.addEventListener('click',start);
+dom.pause.addEventListener('click',()=>{playing=false;prevStamp=null;render();});
+dom.step.addEventListener('click',()=>{playing=false;hasStarted=true;simTime=Math.min(sim.duration,simTime+1/60);render();});
+dom.reset.addEventListener('click',clearRun);
+for(const item of [dom.detach,dom.energy,dom.forces,dom.velocity])item.addEventListener('change',render);
+window.addEventListener('resize',resize);
+new ResizeObserver(resize).observe(canvas);
+resize();
+</script>
+</body>
+</html>
